@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,4 +5,124 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  FEMALE
+  MALE
+}
+
+enum AttachmentType {
+  IMAGE
+}
+
+enum InteractionType {
+  VIEW
+  LIKE
+  REPOST
+}
+
+model User {
+  id           Int            @id @default(autoincrement())
+  username     String         @unique @db.VarChar(18)
+  email        String         @unique @db.VarChar(255)
+  password     String
+  refreshToken String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  profile      Profile?
+  posts        Post[]         @relation(name: "AuthoredPosts")
+  likes        Like[]
+  reposts      RepostedPost[]
+  comments     Comment[]
+  interactions Interaction[]
+
+  @@map("users")
+}
+
+model Profile {
+  id        Int     @id @default(autoincrement())
+  user      User    @relation(fields: [userId], references: [id])
+  userId    Int     @unique
+  firstName String  @db.VarChar(255)
+  lastName  String  @db.VarChar(255)
+  gender    Gender?
+  avatar    String?
+  city      String?
+  bio       String? @db.VarChar(160)
+
+  @@map("profiles")
+}
+
+model Attachment {
+  id        Int            @id @default(autoincrement())
+  post      Post           @relation(fields: [postId], references: [id])
+  postId    Int
+  url       String
+  type      AttachmentType
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@map("attachments")
+}
+
+model Post {
+  id           Int            @id @default(autoincrement())
+  content      String         @db.VarChar(500)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  attachments  Attachment[]
+  author       User           @relation(name: "AuthoredPosts", fields: [authorId], references: [id])
+  authorId     Int
+  likedBy      Like[]
+  repostedBy   RepostedPost[]
+  commentedBy  Comment[]
+  interactedBy Interaction[]
+
+  @@map("posts")
+}
+
+model Like {
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    Int
+  createdAt DateTime @default(now())
+
+  @@id([userId, postId])
+  @@map("likes")
+}
+
+model RepostedPost {
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    Int
+  createdAt DateTime @default(now())
+
+  @@id([userId, postId])
+  @@map("repostedPosts")
+}
+
+model Comment {
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    Int
+  text      String   @db.VarChar(160)
+  createdAt DateTime @default(now())
+
+  @@id([userId, postId])
+  @@map("comments")
+}
+
+model Interaction {
+  id     Int             @id @default(autoincrement())
+  user   User            @relation(fields: [userId], references: [id])
+  userId Int
+  post   Post            @relation(fields: [postId], references: [id])
+  postId Int
+  type   InteractionType
+
+  @@map("interactions")
 }
