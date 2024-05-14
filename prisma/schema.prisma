@@ -36,6 +36,8 @@ model User {
   reposts      RepostedPost[]
   comments     Comment[]
   interactions Interaction[]
+  followedBy   Follows[]      @relation("followedBy")
+  following    Follows[]      @relation("following")
 
   @@map("users")
 }
@@ -125,4 +127,14 @@ model Interaction {
   type   InteractionType
 
   @@map("interactions")
+}
+
+model Follows {
+  followedBy   User     @relation("followedBy", fields: [followedById], references: [id])
+  followedById Int
+  following    User     @relation("following", fields: [followingId], references: [id])
+  followingId  Int
+  createdAt    DateTime @default(now())
+
+  @@id([followingId, followedById])
 }

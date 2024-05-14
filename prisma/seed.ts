@@ -28,7 +28,7 @@ async function hashPassword(password: string) {
 const getUsers = async () => {
   const users = await Promise.all(
     usersDB.map(async (user) => {
-      const { password, ...restUser } = user;
+      const { password, followers, following, ...restUser } = user;
       const { id, userId, gender, ...restProfile } = getUserProfile(user.id);
 
       return {
@@ -39,6 +39,11 @@ const getUsers = async () => {
             ...restProfile,
             gender: gender === 'Male' ? Gender.MALE : Gender.FEMALE,
           },
+        },
+        followedBy: {
+          create: user.followers.map((follower) => ({
+            following: { connect: { id: follower.userId } },
+          })),
         },
       };
     }),
@@ -110,14 +115,17 @@ async function main() {
   const posts = getPosts();
   await prisma.user.createMany({
     data: users.map((user) => {
-      const { id, profile, ...rest } = user;
-      return { ...rest };
+      const { username, email, password } = user;
+      return { username, email, password };
     }),
   });
   users.forEach(async (user) => {
     await prisma.user.update({
       where: { id: user.id },
-      data: { profile: user.profile },
+      data: {
+        profile: user.profile,
+        followedBy: user.followedBy,
+      },
     });
   });
 
