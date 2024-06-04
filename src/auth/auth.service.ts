@@ -10,6 +10,7 @@ import * as argon from 'argon2';
 
 import { AuthDto, RegisterDto } from './dto';
 import { JwtPayload, Tokens } from './types';
+import { AuthUser } from './types/auth.type';
 
 @Injectable()
 export class AuthService {
@@ -20,17 +21,6 @@ export class AuthService {
   ) {}
 
   async signup(dto: RegisterDto): Promise<Tokens> {
-    const isEmailExist = await this.prisma.user.findFirst({
-      where: { email: dto.email },
-    });
-
-    if (isEmailExist)
-      throw new BadRequestException({
-        target: 'email',
-        message: 'This email already exists.',
-        statusCode: 403,
-      });
-
     const isUsernameExist = await this.prisma.user.findFirst({
       where: { username: dto.username },
     });
@@ -39,7 +29,18 @@ export class AuthService {
       throw new BadRequestException({
         target: 'username',
         message: 'This username already exists.',
-        statusCode: 403,
+        statusCode: 400,
+      });
+
+    const isEmailExist = await this.prisma.user.findFirst({
+      where: { email: dto.email },
+    });
+
+    if (isEmailExist)
+      throw new BadRequestException({
+        target: 'email',
+        message: 'This email already exists.',
+        statusCode: 400,
       });
 
     const hashedPassword = await argon.hash(dto.password);
@@ -64,11 +65,12 @@ export class AuthService {
     return tokens;
   }
 
-  async signin(dto: AuthDto): Promise<Tokens> {
+  async signin(dto: AuthDto): Promise<AuthUser> {
     const user = await this.prisma.user.findUnique({
       where: {
         email: dto.email,
       },
+      include: { profile: true },
     });
 
     if (!user) throw new UnauthorizedException('Wrong email or password.');
@@ -81,7 +83,18 @@ export class AuthService {
     const tokens = await this.getTokens(user.id, user.email);
     await this.updateRtHash(user.id, tokens.refreshToken);
 
-    return tokens;
+    const authUser = {
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        name: `${user.profile.firstName} ${user.profile.lastName}`,
+        image: user.profile.avatar,
+      },
+      tokens,
+    };
+
+    return authUser;
   }
 
   async signout(userId: number): Promise<boolean> {
@@ -135,6 +148,7 @@ export class AuthService {
     if (!rtMatches) throw new UnauthorizedException('Refresh token malformed.');
 
     const tokens = await this.getTokens(user.id, user.email);
+
     await this.updateRtHash(user.id, tokens.refreshToken);
 
     return tokens;

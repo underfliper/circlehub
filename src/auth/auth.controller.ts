@@ -11,6 +11,7 @@ import { AuthDto, RegisterDto } from './dto';
 import { Tokens } from './types';
 import { AtGuard, RtGuard } from '../common/guards';
 import { GetCurrentUser } from '../common/decorators';
+import { AuthUser } from './types/auth.type';
 
 @Controller('auth')
 export class AuthController {
@@ -24,7 +25,7 @@ export class AuthController {
 
   @Post('signin')
   @HttpCode(HttpStatus.OK)
-  async signin(@Body() dto: AuthDto): Promise<Tokens> {
+  async signin(@Body() dto: AuthDto): Promise<AuthUser> {
     return this.authService.signin(dto);
   }
 
