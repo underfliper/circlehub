@@ -6,11 +6,24 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { plainToInstance } from 'class-transformer';
 
-import { EditUserDto, UserDto, UserFollowerDto, UserFollowingDto } from './dto';
+import {
+  EditUserDto,
+  FollowUnfollowResponse,
+  UserDto,
+  UserFollowerDto,
+  UserFollowingDto,
+  UserShortDto,
+} from './dto';
+import { ConfigService } from '@nestjs/config';
+import { HttpService } from '@nestjs/axios';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly httpService: HttpService,
+    private config: ConfigService,
+  ) {}
 
   async getWithProfile(userId: number): Promise<UserDto> {
     const user = await this.prisma.user.findUnique({
@@ -44,7 +57,10 @@ export class UserService {
     return plainToInstance(UserFollowingDto, users);
   }
 
-  async follow(userId: number, followingId: number): Promise<void> {
+  async follow(
+    userId: number,
+    followingId: number,
+  ): Promise<FollowUnfollowResponse> {
     await this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -53,9 +69,14 @@ export class UserService {
         },
       },
     });
+
+    return { followStatus: true };
   }
 
-  async unfollow(userId: number, followingId: number): Promise<void> {
+  async unfollow(
+    userId: number,
+    followingId: number,
+  ): Promise<FollowUnfollowResponse> {
     await this.prisma.follows.delete({
       where: {
         followingId_followedById: {
@@ -64,6 +85,8 @@ export class UserService {
         },
       },
     });
+
+    return { followStatus: false };
   }
 
   async edit(userId: number, dto: EditUserDto) {
@@ -92,5 +115,20 @@ export class UserService {
     });
 
     return plainToInstance(UserDto, updatedUser);
+  }
+
+  async suggestedFollows(userId: number) {
+    const AI_SERVICE_BASE_URL = this.config.get<string>('AI_SERVICE_BASE_URL');
+
+    const { data } = await this.httpService.axiosRef.get<number[]>(
+      `${AI_SERVICE_BASE_URL}/suggestedfollows/${userId}`,
+    );
+
+    const suggested = await this.prisma.user.findMany({
+      where: { id: { in: data } },
+      include: { profile: true },
+    });
+
+    return plainToInstance(UserShortDto, suggested);
   }
 }

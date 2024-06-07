@@ -39,9 +39,6 @@ export class UserProfileShortDto extends UserProfileDto {
   gender: Gender;
 
   @Exclude()
-  avatar: string;
-
-  @Exclude()
   city: string;
 
   @Exclude()
@@ -91,4 +88,8 @@ export class UserFollowingDto {
 
 export class FollowUnfollowDto {
   followId: number;
+}
+
+export interface FollowUnfollowResponse {
+  followStatus: boolean;
 }

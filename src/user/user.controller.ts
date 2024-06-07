@@ -17,9 +17,11 @@ import { GetCurrentUser } from '../common/decorators';
 import {
   EditUserDto,
   FollowUnfollowDto,
+  FollowUnfollowResponse,
   UserDto,
   UserFollowerDto,
   UserFollowingDto,
+  UserShortDto,
 } from './dto';
 
 @UseGuards(AtGuard)
@@ -52,11 +54,20 @@ export class UserController {
     return this.userService.getUserFollowing(userId);
   }
 
+  @Get('suggestedFollows')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @HttpCode(HttpStatus.OK)
+  suggestedFollows(
+    @GetCurrentUser('id') userId: number,
+  ): Promise<UserShortDto[]> {
+    return this.userService.suggestedFollows(userId);
+  }
+
   @Post('follow')
   follow(
     @GetCurrentUser('id') userId: number,
     @Body() dto: FollowUnfollowDto,
-  ): Promise<void> {
+  ): Promise<FollowUnfollowResponse> {
     return this.userService.follow(userId, dto.followId);
   }
 
@@ -64,7 +75,7 @@ export class UserController {
   unfollow(
     @GetCurrentUser('id') userId: number,
     @Body() dto: FollowUnfollowDto,
-  ): Promise<void> {
+  ): Promise<FollowUnfollowResponse> {
     return this.userService.unfollow(userId, dto.followId);
   }
 
