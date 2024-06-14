@@ -49,6 +49,6 @@ export class LikeService {
       },
     });
 
-    return true;
+    return false;
   }
 }

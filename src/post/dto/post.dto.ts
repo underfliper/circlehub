@@ -1,4 +1,5 @@
 import { Exclude, Expose, Type } from 'class-transformer';
+import { IsOptional } from 'class-validator';
 import { UserShortDto } from 'src/user/dto';
 
 export class PostStats {
@@ -24,6 +25,12 @@ export class PostDto {
 
   @Type(() => PostStats)
   _count: PostStats;
+
+  @IsOptional()
+  controls: {
+    isLiked: boolean;
+    isReposted: boolean;
+  };
 }
 
 export class AttachmentDto {
