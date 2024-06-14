@@ -85,4 +85,34 @@ export class UserController {
   edit(@GetCurrentUser('id') userId: number, @Body() dto: EditUserDto) {
     return this.userService.edit(userId, dto);
   }
+
+  @Get(':id/posts')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @HttpCode(HttpStatus.OK)
+  getAllPosts(
+    @GetCurrentUser('id') issueId: number,
+    @Param('id') userId: string,
+  ) {
+    return this.userService.getAllPosts(+userId, issueId);
+  }
+
+  @Get(':id/reposts')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @HttpCode(HttpStatus.OK)
+  getReposts(
+    @GetCurrentUser('id') issueId: number,
+    @Param('id') userId: string,
+  ) {
+    return this.userService.getReposts(+userId, issueId);
+  }
+
+  @Get(':id/likes')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @HttpCode(HttpStatus.OK)
+  getLikedPosts(
+    @GetCurrentUser('id') issueId: number,
+    @Param('id') userId: string,
+  ) {
+    return this.userService.getLikedPosts(+userId, issueId);
+  }
 }
