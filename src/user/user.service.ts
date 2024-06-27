@@ -8,10 +8,9 @@ import { plainToInstance } from 'class-transformer';
 
 import {
   EditUserDto,
+  FollowDto,
   FollowUnfollowResponse,
   UserDto,
-  UserFollowerDto,
-  UserFollowingDto,
   UserShortDto,
 } from './dto';
 import { ConfigService } from '@nestjs/config';
@@ -31,7 +30,15 @@ export class UserService {
       where: { id: +userId },
       include: {
         profile: true,
-        _count: { select: { followedBy: true, following: true, posts: true } },
+        _count: {
+          select: {
+            followedBy: true,
+            following: true,
+            posts: true,
+            reposts: true,
+            likes: true,
+          },
+        },
       },
     });
 
@@ -48,22 +55,70 @@ export class UserService {
     throw new NotFoundException('User not found.');
   }
 
-  async getUserFollowers(userId: number): Promise<UserFollowerDto[]> {
+  async getUserFollowers(
+    userId: number,
+    issuerId: number,
+  ): Promise<FollowDto[]> {
     const users = await this.prisma.follows.findMany({
       where: { followingId: userId },
       include: { followedBy: { include: { profile: true } } },
+      orderBy: {
+        followedBy: { profile: { firstName: 'asc' } },
+      },
     });
 
-    return plainToInstance(UserFollowerDto, users);
+    const followers = users.map((user) => {
+      return { ...user.followedBy, createdAt: user.createdAt };
+    });
+
+    const following = (
+      await this.prisma.follows.findMany({
+        where: { followedById: issuerId },
+      })
+    ).map((item) => item.followingId);
+
+    const result = followers.map((follower) => {
+      const isFollow = following.some((following) => following === follower.id);
+
+      return {
+        ...follower,
+        state: { follow: isFollow, createdAt: follower.createdAt },
+      };
+    });
+
+    return plainToInstance(FollowDto, result);
   }
 
-  async getUserFollowing(userId: number): Promise<UserFollowingDto[]> {
+  async getUserFollowing(
+    userId: number,
+    issuerId: number,
+  ): Promise<FollowDto[]> {
     const users = await this.prisma.follows.findMany({
       where: { followedById: userId },
       include: { following: { include: { profile: true } } },
+      orderBy: { following: { profile: { firstName: 'asc' } } },
     });
 
-    return plainToInstance(UserFollowingDto, users);
+    const following = users.map((user) => {
+      return { ...user.following, createdAt: user.createdAt };
+    });
+
+    const followedByIssuer = (
+      await this.prisma.follows.findMany({
+        where: { followedById: issuerId },
+      })
+    ).map((item) => item.followingId);
+
+    const result = following.map((following) => {
+      const isFollow = followedByIssuer.some((item) => item === following.id);
+
+      return {
+        ...following,
+        state: { follow: isFollow, createdAt: following.createdAt },
+      };
+    });
+
+    return plainToInstance(FollowDto, result);
   }
 
   async getAllPosts(userId: number, isssueId: number) {
@@ -225,6 +280,16 @@ export class UserService {
     });
 
     return plainToInstance(PostDto, result);
+  }
+
+  async checkFollow(issuerId: number, userId: number) {
+    const follow = await this.prisma.follows.findFirst({
+      where: { AND: [{ followedById: issuerId }, { followingId: userId }] },
+    });
+
+    if (!follow) return false;
+
+    return true;
   }
 
   async follow(

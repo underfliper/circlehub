@@ -16,6 +16,7 @@ import { GetCurrentUser } from '../common/decorators';
 
 import {
   EditUserDto,
+  FollowDto,
   FollowUnfollowDto,
   FollowUnfollowResponse,
   UserDto,
@@ -34,24 +35,6 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   getWithProfile(@Param('id') userId: string): Promise<UserDto> {
     return this.userService.getWithProfile(+userId);
-  }
-
-  @Get('followers')
-  @UsePipes(new ValidationPipe({ transform: true }))
-  @HttpCode(HttpStatus.OK)
-  getFollowers(
-    @GetCurrentUser('id') userId: number,
-  ): Promise<UserFollowerDto[]> {
-    return this.userService.getUserFollowers(userId);
-  }
-
-  @Get('following')
-  @UsePipes(new ValidationPipe({ transform: true }))
-  @HttpCode(HttpStatus.OK)
-  getFollowings(
-    @GetCurrentUser('id') userId: number,
-  ): Promise<UserFollowingDto[]> {
-    return this.userService.getUserFollowing(userId);
   }
 
   @Get('suggestedFollows')
@@ -84,6 +67,34 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   edit(@GetCurrentUser('id') userId: number, @Body() dto: EditUserDto) {
     return this.userService.edit(userId, dto);
+  }
+
+  @Get(':id/checkFollow')
+  checkFollow(
+    @GetCurrentUser('id') issuerId: number,
+    @Param('id') userId: string,
+  ) {
+    return this.userService.checkFollow(issuerId, +userId);
+  }
+
+  @Get(':id/followers')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @HttpCode(HttpStatus.OK)
+  getFollowers(
+    @GetCurrentUser('id') issueId: number,
+    @Param('id') userId: string,
+  ): Promise<FollowDto[]> {
+    return this.userService.getUserFollowers(+userId, issueId);
+  }
+
+  @Get(':id/following')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  @HttpCode(HttpStatus.OK)
+  getFollowings(
+    @GetCurrentUser('id') issueId: number,
+    @Param('id') userId: string,
+  ): Promise<FollowDto[]> {
+    return this.userService.getUserFollowing(+userId, issueId);
   }
 
   @Get(':id/posts')

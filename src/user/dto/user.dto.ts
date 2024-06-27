@@ -86,6 +86,13 @@ export class UserFollowingDto {
   user: UserShortDto;
 }
 
+export class FollowDto extends UserShortDto {
+  state: {
+    follow: boolean;
+    createdAt: Date;
+  };
+}
+
 export class FollowUnfollowDto {
   followId: number;
 }

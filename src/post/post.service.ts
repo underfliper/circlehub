@@ -65,6 +65,7 @@ export class PostService {
           },
         },
       },
+      orderBy: { createdAt: 'desc' },
     });
 
     return plainToInstance(CommentDto, comments);
@@ -124,7 +125,7 @@ export class PostService {
     const following = users.map((item) => item.followingId);
 
     const posts = await this.prisma.post.findMany({
-      where: { id: { in: following } },
+      where: { author: { id: { in: following } } },
       include: {
         author: { include: { profile: true } },
         attachments: true,

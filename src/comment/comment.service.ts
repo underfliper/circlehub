@@ -33,7 +33,7 @@ export class CommentService {
 
     if (data.isSpam)
       throw new ForbiddenException(
-        'The system has detected the comment as spam, if this is not the case, click "Appeal".',
+        'The system has detected the comment as spam, if this is not the case, click "Appeal". Or change your comment.',
       );
 
     await this.prisma.post.update({
